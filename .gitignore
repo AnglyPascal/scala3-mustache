@@ -1,0 +1,9 @@
+*.class
+*.log
+
+target/
+.bsp/
+.metals/
+.bloop/
+.ammonite/
+metals.sbt
