@@ -83,8 +83,11 @@ private trait ParserTrait:
         staticText()
       case Tag => fail("Unclosed tag \"" + buf.toString + "\"")
       case CTag =>
-        notCTag()
-        staticText()
+        if tagPosition != ctag.length then
+          fail("Unclosed tag \"" + buf.toString + "\"")
+        else 
+          notCTag()
+          staticText()
 
     stack.foreach {
       case IncompleteSection(key, _, _, _) =>
@@ -111,8 +114,8 @@ private trait ParserTrait:
     state = Text
 
   private def notCTag(): Unit =
-    buf.append(otag.substring(0, tagPosition))
-    state = Text
+    buf.append(ctag.substring(0, tagPosition))
+    state = Tag
 
   private def reduce: String =
     var r = buf.toString
@@ -138,7 +141,7 @@ private trait ParserTrait:
       case '!' => // comment, so ignore
       case '&' => stack = UnescapedToken(skipFirst, otag, ctag) :: stack
       case '{' =>
-        if content.endsWith("}") then
+        if content endsWith "}" then
           stack = UnescapedToken(skipBoth, otag, ctag) :: stack
         else fail("Unbalanced \"{\" in tag \"" + content + "\"")
       case '^' =>
