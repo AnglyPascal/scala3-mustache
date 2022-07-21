@@ -5,7 +5,7 @@ trait Token extends TypeAliases:
   def templateSource: String
 
 trait CompositeToken extends Token:
-  def composite(
+  protected def composite(
       tokens: List[Token],
       context: Any,
       partials: Partials,
@@ -13,7 +13,7 @@ trait CompositeToken extends Token:
   ): TokenProduct =
     composite(tokens.map((_, context)), partials, callstack)
 
-  def composite(
+  protected def composite(
       tasks: Seq[(Token, Any)],
       partials: Partials,
       callstack: CallStack

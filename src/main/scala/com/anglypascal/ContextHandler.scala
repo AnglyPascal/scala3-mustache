@@ -36,10 +36,12 @@ trait ContextHandler extends TypeAliases:
 
   @tailrec // add a way to extend this to match some other data structure, ie Value AST
   private def eval(value: Any, str: String, render: Render): Any =
+    import Extensions.*
     value match
       case Some(someVal)    => eval(someVal, str, render)
       case seq: Seq[?]      => seq
       case map: Map[?, ?]   => map
+      case ctx: AST         => ctx.value
       case a: Awaitable[?]  => eval(Await.result(a, Duration.Inf), str, render)
       case f0: Function0[?] => eval(f0(), str, render)
       case f1: Function1[?, ?]    => eval(f1.applyAny(str), str, render)
@@ -48,12 +50,14 @@ trait ContextHandler extends TypeAliases:
 
   @tailrec
   private def findInContext(callstack: CallStack, key: String): Any =
+    import Extensions.*
     callstack.headOption match
       case None => None
       case Some(head) =>
         (head match
           case null           => None
-          case map: Map[?, ?] => map.find(key)
+          case map: Map[?, ?] => map.findKey(key)
+          case ctx: AST       => ctx.findKey(key)
           case any            => reflection(any, key)
         ) match
           case None  => findInContext(callstack.tail, key)
@@ -96,5 +100,3 @@ trait ContextHandler extends TypeAliases:
   private def fields(w: AnyRef): Map[String, Field] = Map(
     w.getClass.getFields.map(x => { x.getName -> x }).toSeq: _*
   )
-
-
