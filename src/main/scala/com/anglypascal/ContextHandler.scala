@@ -46,6 +46,8 @@ trait ContextHandler extends TypeAliases:
       case f0: Function0[?] => eval(f0(), str, render)
       case f1: Function1[?, ?]    => eval(f1.applyAny(str), str, render)
       case f2: Function2[?, ?, ?] => eval(f2.applyAny(str, render), str, render)
+      // case f1: Function1[?, ?]    => eval(extend1(f1)(str), str, render)
+      // case f2: Function2[?, ?, ?] => eval(extend2(f2)(str, render), str, render)
       case other                  => other
 
   @tailrec

@@ -4,6 +4,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 class ParserSpecification extends AnyFlatSpec:
 
+
   it should "handle static text only" in {
     var mustache = new Mustache("Hello, world!").render().toString
     assert(mustache === "Hello, world!")

@@ -1,6 +1,6 @@
 # Scala3-Mustache
 
-This is rewrite of [scala-mustache][4] for scala3 with some bug fixes.
+This is a rewrite of [scala-mustache][4] for scala3 with some bug fixes.
 
 ## What is Mustache?
 

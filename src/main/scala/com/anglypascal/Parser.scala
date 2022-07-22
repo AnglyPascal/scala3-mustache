@@ -13,7 +13,7 @@ private object OTag extends ParserState
 private object Tag  extends ParserState
 private object CTag extends ParserState
 
-private class Parser(val src: Source, var otag: String, var ctag: String)
+class Parser(val src: Source, var otag: String, var ctag: String)
     extends ParserTrait
 
 private trait ParserTrait:

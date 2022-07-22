@@ -9,11 +9,13 @@ lazy val root = project
     scalaVersion := scala3Version,
     libraryDependencies ++= Seq(
       "org.scalameta" %% "munit"     % "0.7.29" % Test,
-      "org.scalatest" %% "scalatest" % "3.2.12"  % Test
+      "org.scalatest" %% "scalatest" % "3.2.12"  % Test,
+      "com.rallyhealth" %% "weepickle-v1" % "1.7.2",
     )
   )
 
 scalacOptions ++= Seq(
-  "-deprecation"
+  "-deprecation",
+  "-feature"
   /* "-explain" */
 )
