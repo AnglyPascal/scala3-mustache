@@ -11,10 +11,14 @@ object CharParser:
   def sat(pred: Char => Boolean): Parser[Char] = str =>
     item(str).filter(p => pred(p._1))
 
-  def char(ch: Char): Parser[Char] = sat(_ == ch)
+  val char: Char => Parser[Char] = ch => sat(_ == ch)
 
-  def unchar(ch: Char): Parser[Char] = sat(_ != ch)
+  val unchar: Char => Parser[Char] = ch => sat(_ != ch)
 
+  val alphabets: Parser[String] = 
+    val alph: Parser[Char] = 
+      ('a' to 'z').map(char).fold(char('.'))(_<||>_)
+    some(alph).map(_.mkString)
 
   def string: String => Parser[String] = str =>
     str match
@@ -28,22 +32,19 @@ object CharParser:
     val f = (c: Char) => (s: String) => b(s).map(p => (p._1.toString + c, p._2))
     a >>= f
 
-  def prependChar(first: Parser[Char])(second: Parser[String]): Parser[String] =
-    val f = (c: Char) =>
-      (str: String) => second(str).map(p => (c +: p._1, p._2))
-    first >>= f
+  extension (pc: Parser[Char])
+    def +:(ps: Parser[String]): Parser[String] = 
+      val f = (c: Char) =>
+        (str: String) => ps(str).map(p => (c +: p._1, p._2))
+      pc >>= f
 
-  def appendChar(first: Parser[String])(second: Parser[Char]): Parser[String] =
-    val f = (s: String) =>
-      (str: String) => second(str).map(p => (s + p._1, p._2))
-    first >>= f
+  extension (ps: Parser[String])
+    def +(pc: Parser[Char]): Parser[String] = 
+      val f = (s: String) =>
+        (str: String) => pc(str).map(p => (s + p._1, p._2))
+      ps >>= f
 
-  // makes a parser that matches
-  // a b c b c b c b c b
-  // pushes the result into a stack
-  // need to mimic many/some
-  def combine(
-      a: Parser[String],
-      b: Parser[String],
-      c: Parser[String]
-  ): Parser[List[String]] = ???
+    def ++:(ps2: Parser[String]): Parser[String] = 
+      val f = (s: String) =>
+        (str: String) => ps2(str).map(p => (s + p._1, p._2))
+      ps >>= f
