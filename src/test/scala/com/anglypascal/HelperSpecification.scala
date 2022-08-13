@@ -3,7 +3,7 @@ package com.anglypascal.mustache
 import org.scalatest.flatspec.AnyFlatSpec
 import java.security.MessageDigest
 
-object HelperSpecification extends AnyFlatSpec:
+class HelperSpecification extends AnyFlatSpec:
 
   object MD5:
     def apply(key: String): String =
@@ -53,12 +53,22 @@ object HelperSpecification extends AnyFlatSpec:
   behavior of "mustache"
 
   it should "render values returned by helper" in {
-    val g = new GravatarMustacheExample(
-      true,
+    val temp1 =
       """
-      <ul>{{# users}}<li><img src=\"{{ gravatar }}\">{{ login }}</li>{{/ users}}</ul>
+      <ul>
+        {{# users}}<li><img src="{{ gravatar }}">{{ login }}</li>
+        {{/ users}}
+      </ul>
       """
-    )
+    val res1 =
+      """
+      <ul>
+        <li><img src="https://secure.gravatar.com/avatar0784394d110aab7e786177a3b688ab0b?s=30">alice</li>
+        <li><img src="https://secure.gravatar.com/avatar91c91fb8529ae2efcd2f58791533ecca?s=30">bob</li>
+        
+      </ul>
+      """
+    val g = new GravatarMustacheExample(true, temp1)
     val m = Map(
       "users" -> List(
         Map("email" -> "alice@example.org", "login" -> "alice"),
@@ -66,31 +76,42 @@ object HelperSpecification extends AnyFlatSpec:
       )
     )
     val s = g.render(m).toString
-    assert(
-      s === ("""<ul>""" +
-        """<li><img src="https://secure.gravatar.com/avatar/""" +
-        """fbf7c6aec1d4280b7c2704c1c0478bd6?s=30">alice</li>""" +
-        """<li><img src="https://secure.gravatar.com/avatar/""" +
-        """10ac39056a4b6f1f6804d724518ff2dc?s=30">bob</li>""" +
-        """</ul>""")
-    )
+    assert(s === res1)
   }
 
   it should "render values returned by parent helper" in {
-    val userList = new Mustache(
+    val temp1 =
       """
-      <ul>{{# users}}<li><img src=\"{{ gravatar }}\">{{ login }}</li>{{/ users}}</ul>
+          <ul>
+            {{# users}}<li><img src="{{ gravatar }}">{{ login }}</li>
+            {{/ users}}
+          </ul>
       """
-    )
-    val page = new Mustache("<html><body>{{>userList}}</body></html>")
-    val root = new GravatarMustacheExample(true, "{{>content}}")
-    val result =
-      """<html><body><ul>""" +
-        """<li><img src="https://secure.gravatar.com/avatar/""" +
-        """fbf7c6aec1d4280b7c2704c1c0478bd6?s=30">alice</li>""" +
-        """<li><img src="https://secure.gravatar.com/avatar/""" +
-        """10ac39056a4b6f1f6804d724518ff2dc?s=30">bob</li>""" +
-        """</ul></body></html>"""
+    val temp2 =
+      """
+      <html>
+        <body>
+          {{> userList }}
+        </body>
+      </html>
+      """
+    val res1 =
+      """
+      <html>
+        <body>
+          
+          <ul>
+            <li><img src="https://secure.gravatar.com/avatar0784394d110aab7e786177a3b688ab0b?s=30">alice</li>
+            <li><img src="https://secure.gravatar.com/avatar91c91fb8529ae2efcd2f58791533ecca?s=30">bob</li>
+            
+          </ul>
+      
+        </body>
+      </html>
+      """
+    val userList = new Mustache(temp1)
+    val page     = new Mustache(temp2)
+    val root     = new GravatarMustacheExample(true, "{{>content}}")
 
     val map = Map(
       "users" -> List(
@@ -98,7 +119,6 @@ object HelperSpecification extends AnyFlatSpec:
         Map("email" -> "bob@example.org", "login"   -> "bob")
       )
     )
-
     val s = root.render(map, Map("content" -> page, "userList" -> userList))
-    assert(s === result)
+    assert(s === res1)
   }
