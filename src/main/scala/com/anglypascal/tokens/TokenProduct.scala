@@ -1,4 +1,4 @@
-package com.anglypascal.mustache
+package com.anglypascal.mustache.tokens
 
 import scala.collection.mutable.StringBuilder
 

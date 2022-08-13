@@ -9,14 +9,6 @@ trait AST:
 
   def value: Any
 
-trait ASTConverter:
-
-  def toAST(context: Any): Either[Any, AST]
-
-  def canHandle(context: Any): Boolean
-
-  AST.addConverter(this)
-
 object AST:
 
   private val converters = Set[ASTConverter]()
@@ -26,3 +18,11 @@ object AST:
 
   def findConverter(c: Any): Option[ASTConverter] =
     converters.filter(_.canHandle(c)).headOption
+
+trait ASTConverter:
+
+  def toAST(context: Any): Either[Any, AST]
+
+  def canHandle(context: Any): Boolean
+
+  AST.addConverter(this)

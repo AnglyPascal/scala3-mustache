@@ -4,7 +4,7 @@ lazy val root = project
   .in(file("."))
   .settings(
     name         := "scala3-mustache",
-    version      := "0.1.1",
+    version      := "0.1.2",
     organization := "com.anglypascal",
     scalaVersion := scala3Version,
     libraryDependencies ++= Seq(

@@ -62,11 +62,12 @@ trait ContextHandler extends TypeAliases:
         (head match
           case null           => None
           case map: Map[?, ?] => map.findKey(key)
+          /** findKey also needs to check for attributes like length or such? */
           case ctx: AST       => ctx.findKey(key)
           case other =>
             AST.findConverter(other) match
               case Some(conv) =>
-                CValue.toAST(other) match
+                conv.toAST(other) match
                   case Right(ast) => ast.findKey(key)
                   case Left(any)  => reflection(any, key)
               case None => reflection(other, key)

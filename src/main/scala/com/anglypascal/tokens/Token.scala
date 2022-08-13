@@ -1,4 +1,6 @@
-package com.anglypascal.mustache
+package com.anglypascal.mustache.tokens
+
+import com.anglypascal.mustache.TypeAliases
 
 trait Token extends TypeAliases:
   def render: TokenRender

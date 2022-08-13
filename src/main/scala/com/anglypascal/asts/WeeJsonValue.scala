@@ -16,7 +16,7 @@ class CValue(v: Value) extends AST:
 
   def value: Any =
     v match
-      case obj: Obj   => obj.obj.map(p => (p._1, CValue.valueToAST(p._2))).toMap
+      case obj: Obj   => obj.obj.toMap.map(p => (p._1, CValue.valueToAST(p._2)))
       case str: Str   => str.str
       case num: Num   => num.num
       case bool: Bool => bool.bool

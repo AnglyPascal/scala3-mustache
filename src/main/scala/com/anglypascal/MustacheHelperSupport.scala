@@ -1,7 +1,11 @@
 package com.anglypascal.mustache
 
+/** Helper trait that can be extended to define functions that will be called
+  * upon appropriate placeholders.
+  */
 trait MustacheHelperSupport:
   type Render = String => String
+
   private val contextLocal = new java.lang.ThreadLocal[Any]()
   private val renderLocal  = new java.lang.ThreadLocal[Render]()
 

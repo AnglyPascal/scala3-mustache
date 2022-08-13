@@ -4,24 +4,20 @@ import com.anglypascal.mustache.asts.CValue
 import scala.io.Source
 import com.rallyhealth.weejson.v1.{Value, Obj}
 
-@main 
+@main
 def hello: Unit =
-  object CH extends ContextHandler
-  object M extends Mustache("")
-  import CValue.*
+  val user = new Mustache("<strong>{{name}}</strong>")
+  val main = new Mustache(
+    "<h2>Names</h2>\n{{#names}}\n  {{> user}}\n{{/names}}"
+  )
+  val ctx =
+    Map(
+      "names" -> List(
+        Map("name" -> "Alice"),
+        Map("name" -> "Bob")
+      )
+    )
+  val partials = Map("user" -> user)
+  val l        = main.render(ctx, partials)
+  println(l)
 
-  type Partials = Map[String, Mustache]
-  type CallStack = List[Any]
-  type Render = String => String
-  type Renderer = (Any, Partials, CallStack) => Render
-  type TokenRender = (Any, Partials, CallStack) => TokenProduct
-
-  // val map1  = valueToAST(Obj("a" -> "b"))
-  val map2  = Obj("a" -> "b")
-
-  def r1: Renderer = (_, _, _) => (_) => ""
-
-  // val v1 = CH.valueOf("a", map1, Map(), List(M), "", r1)
-  val v2 = CH.valueOf("a", map2, Map(), List(M), "", r1)
-  // println(v1)
-  println(v2)

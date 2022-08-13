@@ -1,5 +1,7 @@
 package com.anglypascal.mustache
 
+import com.anglypascal.mustache.tokens.TokenProduct
+
 trait TypeAliases:
   type Partials = Map[String, Mustache]
   type CallStack = List[Any]

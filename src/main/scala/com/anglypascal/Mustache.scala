@@ -1,5 +1,6 @@
 package com.anglypascal.mustache
 
+import com.anglypascal.mustache.tokens.{Token, TokenProduct}
 import scala.io.Source
 
 class Mustache(root: Token) extends MustacheHelperSupport:

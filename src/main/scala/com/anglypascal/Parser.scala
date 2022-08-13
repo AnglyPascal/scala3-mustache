@@ -7,6 +7,7 @@ import scala.annotation.tailrec
 case class MustacheParseException(line: Int, msg: String)
     extends Exception("Line " + line + ": " + msg)
 
+/** Write this with parser combinators? */
 private class ParserState
 private object Text extends ParserState
 private object OTag extends ParserState
