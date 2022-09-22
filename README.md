@@ -131,6 +131,8 @@ template.render(Map("name" -> "Willy")) // returns "<b>Willy is awesome.</b>"
 Sometimes it is nice to keep different kinds of helpers separate. To do so, you can
 define helper traits and then mix them up as needed:
 ``` scala
+import mustache.MustacheHelperSupport
+
 trait MyHelper:
   this: MyHelper with MustacheHelperSupport =>
   def wrapped(str: String) = "<b>" + render(str) + "</b>"

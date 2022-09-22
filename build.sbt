@@ -1,10 +1,10 @@
-val scala3Version = "3.1.3"
+val scala3Version = "3.2.0"
 
 lazy val root = project
   .in(file("."))
   .settings(
     name         := "scala3-mustache",
-    version      := "0.1.2",
+    version      := "0.1.2.1",
     organization := "com.anglypascal",
     scalaVersion := scala3Version,
     libraryDependencies ++= Seq(

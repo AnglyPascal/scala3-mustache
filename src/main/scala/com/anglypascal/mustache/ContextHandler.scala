@@ -51,7 +51,13 @@ trait ContextHandler extends TypeAliases:
         eval(f1.applyAny(str), str, render)
       case f2: Function2[?, ?, ?] =>
         eval(f2.applyAny(str, render), str, render)
-      case other => other
+      case other =>
+        AST.findConverter(other) match
+          case Some(conv) =>
+            conv.toAST(other) match
+              case Right(ast) => ast.value
+              case Left(any)  => other
+          case None => other
 
   @tailrec
   private def findInContext(callstack: CallStack, key: String): Any =
