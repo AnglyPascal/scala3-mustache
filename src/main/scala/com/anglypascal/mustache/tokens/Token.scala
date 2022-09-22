@@ -6,7 +6,9 @@ trait Token extends TypeAliases:
   def render: TokenRender
   def templateSource: String
 
-trait CompositeToken extends Token:
+trait CompositeToken:
+  this: Token => 
+
   protected def composite(
       tokens: List[Token],
       context: Any,

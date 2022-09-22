@@ -13,7 +13,7 @@ trait TokenProduct:
 
 object EmptyProduct extends TokenProduct:
   val maxLength: Int = 0
-  def write(out: StringBuilder): Unit = {}
+  def write(out: StringBuilder): Unit = ()
 
 case class StringProduct(str: String) extends TokenProduct:
   val maxLength: Int = str.length

@@ -4,7 +4,7 @@ import com.anglypascal.mustache.asts.CValue
 import scala.io.Source
 import com.rallyhealth.weejson.v1.{Value, Obj}
 
-@main
+// @main
 def hello: Unit =
   val user = new Mustache("<strong>{{name}}</strong>")
   val main = new Mustache(

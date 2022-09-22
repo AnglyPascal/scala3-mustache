@@ -1,9 +1,9 @@
-package com.anglypascal.mustache
+package com.anglypascal.mustache.parsers
 
+import com.anglypascal.mustache.*
 import org.scalatest.flatspec.AnyFlatSpec
 
 class ParserSpecification extends AnyFlatSpec:
-
 
   it should "handle static text only" in {
     var mustache = new Mustache("Hello, world!").render().toString
@@ -123,7 +123,7 @@ class ParserSpecification extends AnyFlatSpec:
 
   it should "report lines properly" in {
     def errorLine(mus: => Mustache) =
-      intercept[MustacheParseException] { mus }.line
+      intercept[MustacheParseException] { mus }.row
 
     def mus1 = new Mustache("{{>}}")
     assert(errorLine(mus1) === 1)

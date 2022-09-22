@@ -3,8 +3,9 @@ import com.anglypascal.mustache._
 
 case class EscapedToken(key: String, otag: String, ctag: String)
     extends Token
-    with ContextHandler
-    with ValuesFormatter:
+    with ContextHandler:
+
+  import ValuesFormatter.format
 
   private val source = otag + key + ctag
 
@@ -24,3 +25,6 @@ case class EscapedToken(key: String, otag: String, ctag: String)
         }
 
   def templateSource: String = source
+
+  override def toString(): String = 
+    "EscapedToken: " + templateSource

@@ -4,7 +4,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 class ValuesFormatterSpecification extends AnyFlatSpec:
 
-  object T extends ValuesFormatter
+  val T = ValuesFormatter
 
   it should "render empty strings for null and None" in {
     assert(T.format(null) === "")

@@ -3,8 +3,9 @@ import com.anglypascal.mustache._
 
 case class UnescapedToken(key: String, otag: String, ctag: String)
     extends Token
-    with ContextHandler
-    with ValuesFormatter:
+    with ContextHandler:
+
+  import ValuesFormatter.format
 
   private val source = otag + "&" + key + ctag
 
@@ -17,3 +18,6 @@ case class UnescapedToken(key: String, otag: String, ctag: String)
       def write(out: StringBuilder): Unit = out.append(v)
 
   def templateSource: String = source
+
+  override def toString(): String = 
+    "UnescapedToken: " + templateSource

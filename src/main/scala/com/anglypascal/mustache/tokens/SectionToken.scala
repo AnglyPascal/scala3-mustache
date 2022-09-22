@@ -1,7 +1,7 @@
 package com.anglypascal.mustache.tokens
 import com.anglypascal.mustache._
 
-case class SectionToken(
+class SectionToken(
     inverted: Boolean,
     key: String,
     children: List[Token],
@@ -13,42 +13,35 @@ case class SectionToken(
     with ContextHandler
     with CompositeToken:
 
-  private val childrenSource = children.map(_.templateSource).mkString
-  private val source =
-    startOTag + (if inverted then "^" else "#") + key + startCTag +
-      childrenSource +
-      endOTag + "/" + key + endCTag
-
-  private val childrenTemplate = new Mustache(
-    if children.size == 1 then children(0) else RootToken(children)
-  )
+  private lazy val childrenSource = children.map(_.templateSource).mkString
 
   def render: TokenRender = (context, partials, callstack) =>
     def compose = composite(children, context, partials, context :: callstack)
-    valueOf(
+    val v = valueOf(
       key,
       context,
       partials,
       callstack,
       childrenSource,
       renderContent
-    ) match
+    )
+
+    v match
       case null | None =>
         if !inverted then EmptyProduct
         else compose
       case b: Boolean =>
         if !(b ^ inverted) then EmptyProduct
         else compose
-      case s: Seq[?] =>
-        if inverted then
-          if !s.isEmpty then EmptyProduct
-          else compose
-        else
-          val tasks = for
-            element <- s
-            token   <- children
-          yield (token, element)
-          composite(tasks, partials, context :: callstack)
+      case s: Seq[?] if inverted =>
+        if !s.isEmpty then EmptyProduct
+        else compose
+      case s: Seq[?] if !inverted =>
+        val tasks = for
+          element <- s
+          token   <- children
+        yield (token, element)
+        composite(tasks, partials, context :: callstack)
       case str: String =>
         if inverted then EmptyProduct
         else StringProduct(str)
@@ -58,10 +51,21 @@ case class SectionToken(
 
   private def renderContent: Renderer = (context, partials, callstack) =>
     template =>
-      if template == childrenSource then
-        childrenTemplate.render(context, partials, context :: callstack)
-      else
-        val t = new Mustache(template, startOTag, startCTag)
-        t.render(context, partials, context :: callstack)
+      val mus =
+        if template == childrenSource then
+          new Mustache(
+            if children.size == 1 then children(0)
+            else RootToken(children)
+          )
+        else new Mustache(template, startOTag, startCTag)
+      mus.render(context, partials, context :: callstack)
+
+  private lazy val source =
+    startOTag + (if inverted then "^" else "#") + key + startCTag +
+      childrenSource +
+      endOTag + "/" + key + endCTag
 
   def templateSource: String = source
+
+  override def toString(): String = 
+    s"SectionToken: $key, [" + children.mkString(", ") + "]"

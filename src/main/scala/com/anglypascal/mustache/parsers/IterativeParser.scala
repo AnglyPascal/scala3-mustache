@@ -1,30 +1,22 @@
-package com.anglypascal.mustache
+package com.anglypascal.mustache.parsers
+
 import com.anglypascal.mustache.tokens._
 
 import scala.io.Source
 import scala.annotation.tailrec
 
-case class MustacheParseException(line: Int, msg: String)
-    extends Exception("Line " + line + ": " + msg)
+case class MustacheParseException(row: Int, col: Int, msg: String)
+    extends Exception(s"($row, $col): " + msg)
 
-/** Write this with parser combinators? */
-private class ParserState
-private object Text extends ParserState
-private object OTag extends ParserState
-private object Tag  extends ParserState
-private object CTag extends ParserState
-
-class Parser(val src: Source, var otag: String, var ctag: String)
-    extends ParserTrait
-
-private trait ParserTrait:
-  val src: Source
-  var otag: String
-  var ctag: String
+class IterativeParser(val src: Source, var otag: String, var ctag: String):
+  enum ParserState:
+    case Text, OTag, Tag, CTag
+  import ParserState.*
 
   var state: ParserState     = Text
   var tagPosition: Int       = 0
-  var line: Int              = 1
+  var row: Int               = 1
+  var col: Int               = 1
   var prev: Char             = '\uffff'
   var cur: Char              = '\uffff'
   var curlyBraceTag: Boolean = false
@@ -86,7 +78,7 @@ private trait ParserTrait:
       case CTag =>
         if tagPosition != ctag.length then
           fail("Unclosed tag \"" + buf.toString + "\"")
-        else 
+        else
           notCTag()
           staticText()
 
@@ -100,13 +92,17 @@ private trait ParserTrait:
     if result.size == 1 then result(0)
     else RootToken(result)
 
-  private def fail[A](msg: String): A = throw MustacheParseException(line, msg)
+  private def fail[A](msg: String): A = 
+    throw MustacheParseException(row, col, msg)
 
   private def consume: Boolean =
     prev = cur
     if src.hasNext then
       cur = src.next()
-      if cur == '\r' || (cur == '\n' && prev != '\r') then line += 1
+      if cur == '\r' || (cur == '\n' && prev != '\r') then
+        row += 1
+        col = 1
+      col += 1
       true
     else false
 

@@ -2,7 +2,7 @@ package com.anglypascal.mustache
 
 import scala.annotation.tailrec
 
-trait ValuesFormatter:
+object ValuesFormatter:
   @tailrec
   final def format(value: Any): String =
     value match
