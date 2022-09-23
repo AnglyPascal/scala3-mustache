@@ -12,127 +12,74 @@ import com.anglypascal.mustache.tokens.PartialToken
 import scala.io.Source
 import scala.util.matching.Regex
 
-case class TagInfo(otag: String, ctag: String):
-  val sreg = raw"(?s)(.*?)($otag.*?$ctag.*)".r
-  val treg = raw"(?s)$otag(.*?)$ctag(.*)".r
+object RecursiveParser:
 
-sealed trait ParserTrait:
-  val tag: TagInfo
-  def apply(tokens: List[Token])(
-      str: String
-  ): (List[Token], ParserTrait, String)
+  type Matcher[A] = A => (String, String, A)
 
-final case class StringParser(tag: TagInfo) extends ParserTrait:
+  type State[A] = (String, String, Matcher[A])
 
-  def next: ParserTrait = TagParser(tag)
-  def apply(tokens: List[Token])(str: String) =
-    str match
-      case tag.sreg(a, b) =>
-        if a == "" then (tokens, next, b)
-        else (StaticTextToken(a) :: tokens, next, b)
-      case _ =>
-        if str == "" then (tokens, EmptyParser(tag), "")
-        else (StaticTextToken(str) :: tokens, EmptyParser(tag), "")
+  type Create[A] = String => String => Matcher[A]
 
-final case class TagParser(tag: TagInfo) extends ParserTrait:
-  def apply(tokens: List[Token])(str: String) =
-    str match
-      case tag.treg(k, b) =>
-        val a = k.trim
-        if a.startsWith("#") then
-          val key = a.substring(1).trim
-          (
-            IncompleteSection(key, false, tag.otag, tag.ctag) :: tokens,
-            StringParser(tag),
-            b
-          )
-        else if a.startsWith("^") then
-          val key = a.substring(1).trim
-          (
-            IncompleteSection(key, true, tag.otag, tag.ctag) :: tokens,
-            StringParser(tag),
-            b
-          )
-        else if a.startsWith(">") || a.startsWith("<") then
-          val key = a.substring(1).trim
-          PartialParser(tag, key)(tokens)(b)
-        else if a.startsWith("&") then
-          val key = a.substring(1).trim
-          (
-            UnescapedToken(key, tag.otag, tag.ctag) :: tokens,
-            StringParser(tag),
-            b
-          )
-        else if (a.startsWith("{") && a.endsWith("}")) then
-          val key = a.substring(1).init.trim
-          (
-            UnescapedToken(key, tag.otag, tag.ctag) :: tokens,
-            StringParser(tag),
-            b
-          )
-        else if (a.startsWith("=") && a.endsWith("=")) then
-          val arr  = a.substring(1).init.trim.split(" ")
-          val ns   = TokenParser.escape(arr.head.trim)
-          val nc   = TokenParser.escape(arr.last.trim)
-          val ntag = TagInfo(ns, nc)
-          StringParser(ntag)(tokens)(b)
-        else if a.startsWith("/") then
-          val key = a.substring(1).trim
+  def fail(msg: String) = throw MustacheParseException(0, 0, msg)
+
+  @tailrec
+  def parser[A](create: Create[A])(
+      _a: A,
+      tokens: List[Token],
+      state: State[A]
+  ): Token =
+    val (str, tag, a) = state._3(_a)
+    val st            = StaticTextToken(str)
+    if tag == null then RootToken((st :: tokens).reverse)
+    else if tag == "" then fail("Empty Tag")
+    else
+      val k = tag.trim
+      k(0) match
+        case '#' =>
+          val key = k.substring(1).trim
+          val is  = IncompleteSection(key, false, state._1, state._2)
+          parser(create)(a, is ::st ::  tokens, state)
+        case '^' =>
+          val key = k.substring(1).trim
+          val is  = IncompleteSection(key, true, state._1, state._2)
+          parser(create)(a, is :: st :: tokens, state)
+        case '<' | '>' =>
+          val key = k.substring(1).trim
+          val pt  = PartialToken(key, state._1, state._2)
+          parser(create)(a, pt :: st :: tokens, state)
+        case '&' =>
+          val key = k.substring(1).trim
+          val ut  = UnescapedToken(key, state._1, state._2)
+          parser(create)(a, ut :: st :: tokens, state)
+        case '{' if k.charAt(k.length - 1) == '}' =>
+          val key = k.substring(1, k.length - 1).trim
+          val ut  = UnescapedToken(key, state._1, state._2)
+          parser(create)(a, ut :: st :: tokens, state)
+        case '{' if k.charAt(k.length - 1) != '}' =>
+          fail("unclosed unescaped token brace")
+        case '=' if k.charAt(k.length - 1) == '=' =>
+          val arr = k.substring(1, k.length - 1).trim.split(" ")
+          val o   = arr(0)
+          val c   = arr(1)
+          parser(create)(a, st :: tokens, (state._1, state._2, create(o)(c)))
+        case '/' =>
+          val key = k.substring(1).trim
+
           @tailrec
-          def loop(children: List[Token], t: List[Token]): List[Token] =
+          def loop(c: List[Token], t: List[Token]): List[Token] =
             t match
-              case Nil => TokenParser.fail(s"closing unopened section tag $key")
-              case IncompleteSection(_key, inv, so, sc) :: tail =>
-                if key == _key then
-                  SectionToken(
-                    inv,
-                    key,
-                    children,
-                    so,
-                    sc,
-                    tag.otag,
-                    tag.ctag
-                  ) :: tail
+              case Nil => fail(s"closing unopened section tag $key")
+              case IncompleteSection(_k, inv, so, sc) :: tail =>
+                if key == _k then
+                  SectionToken(inv, key, c, so, sc, state._1, state._2) :: tail
                 else TokenParser.fail(s"unclosed section tag $key")
-              case head :: tail => loop(head :: children, tail)
-          val t = loop(List(), tokens)
-          StringParser(tag)(t)(b)
-        else if a == "" then TokenParser.fail("empty tag")
-        else
-          (
-            EscapedToken(a, tag.otag, tag.ctag) :: tokens,
-            StringParser(tag),
-            b
-          )
-      case _ => TokenParser.fail("couldn't match tag complete")
+              case head :: tail => loop(head :: c, tail)
 
-final case class PartialParser(tag: TagInfo, key: String) extends ParserTrait:
-  def apply(tokens: List[Token])(str: String) =
-    (
-      PartialToken(key, tag.otag, tag.ctag) :: tokens,
-      StringParser(tag),
-      str
-    )
+          parser(create)(a, loop(List(), st :: tokens), state)
+        case _ =>
+          val et = EscapedToken(k, state._1, state._2)
+          parser(create)(a, et :: st :: tokens, state)
 
-final case class EmptyParser(tag: TagInfo) extends ParserTrait:
-  def apply(tokens: List[Token])(str: String) = TokenParser.fail("EmptyParser")
-
-class RecursiveParser(val src: Source, val otag: String, val ctag: String):
-  def parse(): Token =
-    val string = src.mkString
-    @tailrec
-    def loop(
-        tuple: (List[Token], ParserTrait, String)
-    ): List[Token] =
-      val (tokens, parser, str) = tuple
-      if str == "" then tokens
-      else loop(parser(tokens)(str))
-    val tag    = TagInfo(otag, ctag)
-    val tokens = loop(List(), StringParser(tag), string)
-    if tokens.length == 1 then tokens(0)
-    else RootToken(tokens.reverse)
-
-object TokenParser:
   def escape(str: String): String =
     val esc = Map(
       "*" -> "\\*",
@@ -142,22 +89,23 @@ object TokenParser:
     )
     esc.foldLeft(str)((s, p) => s.replace(p._1, p._2))
 
-  def fail(msg: String) = throw MustacheParseException(0, 0, msg)
+  val create: Create[String] =
+    otag =>
+      ctag =>
+        val o   = escape(otag)
+        val c   = escape(ctag)
+        val reg = raw"(?s)(.*?)$o(.*?)$c(.*)".r
+        str =>
+          str match
+            case reg(a, b, c) => (a, b, c)
+            case _            => (str, null, "")
 
-@main
-def parseTest =
-  // for i <- 10000 to 1000000 by 10000 do
-  val i     = 100
-  val temp1 = "{{haha}}" * i
-  val ss    = Source.fromString(temp1)
-  val p     = RecursiveParser(ss, raw"\{\{", raw"\}\}")
-  val p2    = IterativeParser(ss, "{{", "}}")
+  def parse(str: String, otag: String, ctag: String) =
+    val matcher = create(otag)(ctag)
+    parser(create)(str, List(), (otag, ctag, matcher))
 
-  val t1 = System.nanoTime
-  val v  = p.parse()
-  val t2 = System.nanoTime
-  val v2 = p2.parse()
-  val t3 = System.nanoTime
-
-  print(i, (t2 - t1) / (t3 - t2))
-  println()
+  // @main
+  def recparseTest =
+    val s = "haha{{hello}}"
+    val v = parse(s, "{{", "}}")
+    println(v)

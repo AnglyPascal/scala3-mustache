@@ -5,24 +5,28 @@ import com.anglypascal.mustache.tokens._
 import scala.io.Source
 import scala.annotation.tailrec
 
-case class MustacheParseException(row: Int, col: Int, msg: String)
+final case class MustacheParseException(row: Int, col: Int, msg: String)
     extends Exception(s"($row, $col): " + msg)
 
-class IterativeParser(val src: Source, var otag: String, var ctag: String):
-  enum ParserState:
+final class IterativeParser(
+    val src: Source,
+    var otag: String,
+    var ctag: String
+):
+  private enum ParserState:
     case Text, OTag, Tag, CTag
   import ParserState.*
 
-  var state: ParserState     = Text
-  var tagPosition: Int       = 0
-  var row: Int               = 1
-  var col: Int               = 1
-  var prev: Char             = '\uffff'
-  var cur: Char              = '\uffff'
-  var curlyBraceTag: Boolean = false
-  var stack: List[Token]     = List()
+  private var state: ParserState     = Text
+  private var tagPosition: Int       = 0
+  private var row: Int               = 1
+  private var col: Int               = 1
+  private var prev: Char             = '\uffff'
+  private var cur: Char              = '\uffff'
+  private var curlyBraceTag: Boolean = false
+  private var stack: List[Token]     = List()
 
-  val buf = new StringBuilder(8192)
+  private val buf = new StringBuilder(8192)
 
   def parse(): Token =
     while consume do
@@ -92,7 +96,7 @@ class IterativeParser(val src: Source, var otag: String, var ctag: String):
     if result.size == 1 then result(0)
     else RootToken(result)
 
-  private def fail[A](msg: String): A = 
+  private def fail[A](msg: String): A =
     throw MustacheParseException(row, col, msg)
 
   private def consume: Boolean =
@@ -128,7 +132,7 @@ class IterativeParser(val src: Source, var otag: String, var ctag: String):
     if trimmed.length == 0 then fail("Empty tag")
     else trimmed
 
-  def tag(): Unit =
+  private def tag(): Unit =
     state = Text
     val content   = checkContent(reduce)
     def skipFirst = checkContent(content.substring(1))
@@ -181,8 +185,8 @@ class IterativeParser(val src: Source, var otag: String, var ctag: String):
               ctag = c
             case _ =>
               fail(
-                "Invalid change delimiter tag content: \"" + changeDelimiter + "\""
+                s"Invalid change delimiter tag content: \"$changeDelimiter\""
               )
-        else fail("Invalid change delimiter tag content: \"" + content + "\"")
+        else fail(s"Invalid change delimiter tag content: \"$content\"")
 
       case _ => stack = EscapedToken(content, otag, ctag) :: stack
