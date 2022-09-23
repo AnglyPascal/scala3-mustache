@@ -11,6 +11,7 @@ import com.anglypascal.mustache.tokens.SectionToken
 import com.anglypascal.mustache.tokens.PartialToken
 import scala.io.Source
 import scala.util.matching.Regex
+import scala.collection.mutable.StringBuilder.apply
 
 object RecursiveParser:
 
@@ -38,7 +39,7 @@ object RecursiveParser:
         case '#' =>
           val key = k.substring(1).trim
           val is  = IncompleteSection(key, false, state._1, state._2)
-          parser(create)(a, is ::st ::  tokens, state)
+          parser(create)(a, is :: st :: tokens, state)
         case '^' =>
           val key = k.substring(1).trim
           val is  = IncompleteSection(key, true, state._1, state._2)
@@ -89,7 +90,7 @@ object RecursiveParser:
     )
     esc.foldLeft(str)((s, p) => s.replace(p._1, p._2))
 
-  val create: Create[String] =
+  val createStr: Create[String] =
     otag =>
       ctag =>
         val o   = escape(otag)
@@ -100,12 +101,99 @@ object RecursiveParser:
             case reg(a, b, c) => (a, b, c)
             case _            => (str, null, "")
 
-  def parse(str: String, otag: String, ctag: String) =
-    val matcher = create(otag)(ctag)
-    parser(create)(str, List(), (otag, ctag, matcher))
+  val create: Create[Source] =
+    otag =>
+      ctag =>
+        src =>
+          enum State:
+            case Text, O, Tag, C
 
-  // @main
+          val buf            = StringBuilder()
+          var tagPos         = 0
+          var state          = State.Text
+          var cur: Char      = '\uffff'
+          var prev: Char     = '\uffff'
+          var curlyBrace     = false
+          var str            = ""
+          var tag: String    = null
+          var shouldContinue = true
+
+          while shouldContinue do
+            if !src.hasNext then
+              shouldContinue = false
+              state match
+                case State.Text | State.O =>
+                  str = buf.toString
+                case State.Tag | State.C =>
+                  fail("unfinished tag")
+            else
+              cur = src.next
+              state match
+                case State.Text =>
+                  if cur == otag(0) then
+                    if otag.length > 1 then
+                      tagPos = 1
+                      state = State.O
+                    else
+                      str = buf.toString
+                      buf.clear()
+                      state = State.Tag
+                  else buf.append(cur)
+                case State.O =>
+                  if cur == otag(tagPos) then
+                    if tagPos == otag.length - 1 then
+                      str = buf.toString
+                      buf.clear()
+                      state = State.Tag
+                    else tagPos += 1
+                  else
+                    buf.append(otag.substring(0, tagPos))
+                    buf.append(cur)
+                    state = State.Text
+                case State.Tag =>
+                  if buf.isEmpty && cur == '{' then
+                    curlyBrace = true
+                    buf.append(cur)
+                  else if curlyBrace && cur == '}' then
+                    curlyBrace = false
+                    buf.append(cur)
+                  else if cur == ctag(0) then
+                    if ctag.length > 1 then
+                      tagPos = 1
+                      state = State.C
+                    else
+                      tag = buf.toString
+                      buf.clear()
+                      shouldContinue = false
+                  else buf.append(cur)
+                case State.C =>
+                  if cur == ctag(tagPos) then
+                    if tagPos == ctag.length - 1 then
+                      tag = buf.toString
+                      buf.clear()
+                      shouldContinue = false
+                    else tagPos += 1
+                  else
+                    buf.append(ctag.substring(0, tagPos))
+                    buf.append(cur)
+                    state = State.Tag
+
+          (str, tag, src)
+
+  def parseStr(str: String, otag: String, ctag: String) =
+    parser(createStr)(str, List(), (otag, ctag, createStr(otag)(ctag)))
+
+  def parse(src: Source, otag: String, ctag: String) =
+    parser(create)(src, List(), (otag, ctag, create(otag)(ctag)))
+
+  @main
   def recparseTest =
-    val s = "haha{{hello}}"
-    val v = parse(s, "{{", "}}")
-    println(v)
+    // val s = "haha{{#hello}}{{bruh}}{{/hello}}"
+    // val v = parse(s, "{{", "}}")
+    // println(v)
+    val m = create("{{")("}}")
+    val s = Source.fromString(
+      "{{#haha}}{{a}}{{/haha}}{{=_ _=}}_hello__^hi_bruh_/hi__={{ }}=_"
+    )
+    val t = parse(s, "{{", "}}")
+    println(t)

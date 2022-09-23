@@ -3,11 +3,13 @@ package com.anglypascal.mustache
 import com.anglypascal.mustache.tokens.{Token, TokenProduct}
 import com.anglypascal.mustache.parsers.IterativeParser
 import scala.io.Source
+import com.anglypascal.mustache.parsers.RecursiveParser
 
 class Mustache(root: Token) extends MustacheHelperSupport:
 
   def this(source: Source, open: String = "{{", close: String = "}}") =
-    this((IterativeParser(source, open, close)).parse())
+    // this((IterativeParser(source, open, close)).parse())
+    this(RecursiveParser.parse(source, open, close))
 
   def this(str: String, open: String, close: String) =
     this(Source.fromString(str), open, close)

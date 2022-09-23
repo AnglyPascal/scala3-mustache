@@ -142,21 +142,18 @@ object TokenParser:
 
   def fail(msg: String) = throw MustacheParseException(0, 0, msg)
 
-@main
+// @main
 def parseTest =
-  for i <- 10000 to 100000 by 1000 do
-    // val i     = 100000
-    val temp1 = "{{#haha}}{{a}}{{/haha}}" * i
-    val ss    = Source.fromString(temp1)
-    // val p     = OOPRecursiveParser(ss, raw"\{\{", raw"\}\}")
-    val p2    = IterativeParser(ss, "{{", "}}")
+  for i <- 100000 to 1000000 by 100000 do
+    val temp1 =
+      "{{#haha}}{{a}}{{/haha}}{{=_ _=}}_hello__^hi_bruh_/hi__={{ }}=_" * i
+    val ss = Source.fromString(temp1)
+    val p2 = IterativeParser(ss, "{{", "}}")
 
-    // val t1 = System.nanoTime
-    // val v  = p.parse()
     val t2 = System.nanoTime
     val v2 = p2.parse()
-    // val t3 = System.nanoTime
-    // val v3 = RecursiveParser.parse(temp1, "{{", "}}")
+    val t3 = System.nanoTime
+    val v3 = RecursiveParser.parse(ss, "{{", "}}")
     val t4 = System.nanoTime
 
-    // println((t4 - t2)/i)
+    println((t3 - t2).toDouble / (t4 - t3).toDouble)
