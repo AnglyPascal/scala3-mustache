@@ -1,5 +1,4 @@
 package com.anglypascal.mustache.tokens
-import com.anglypascal.mustache._
 
 case class ChangeDelimitersToken(
     newOTag: String,

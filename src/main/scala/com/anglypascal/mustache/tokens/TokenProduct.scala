@@ -3,7 +3,7 @@ package com.anglypascal.mustache.tokens
 import scala.collection.mutable.StringBuilder
 
 trait TokenProduct:
-  val maxLength: Int 
+  val maxLength: Int
   def write(out: StringBuilder): Unit
 
   override def toString =
@@ -13,9 +13,10 @@ trait TokenProduct:
 
 object EmptyProduct extends TokenProduct:
   val maxLength: Int = 0
-  def write(out: StringBuilder): Unit = ()
+  def write(out: StringBuilder): Unit =
+    ()
 
 case class StringProduct(str: String) extends TokenProduct:
   val maxLength: Int = str.length
-  def write(out: StringBuilder): Unit = out.append(str)
-  
+  def write(out: StringBuilder): Unit =
+    out.append(str)

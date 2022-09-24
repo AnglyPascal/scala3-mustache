@@ -1,5 +1,6 @@
 package com.anglypascal.mustache.parsers
 
+import com.anglypascal.mustache.tokens.ChangeDelimitersToken
 import com.anglypascal.mustache.tokens.EscapedToken
 import com.anglypascal.mustache.tokens.IncompleteSection
 import com.anglypascal.mustache.tokens.PartialToken
@@ -26,12 +27,12 @@ object RecursiveParser:
   private def fail(row: Int, col: Int, msg: String) =
     throw MustacheParseException(row, col, msg)
 
-  private def skipLeft(str: String)(pos: Pos) =
+  private inline def skipLeft(str: String)(pos: Pos) =
     val s = str.substring(1).trim
     if s == "" then fail(pos._1, pos._2, "Empty Tag")
     else s
 
-  private def skipBoth(str: String)(pos: Pos) =
+  private inline def skipBoth(str: String)(pos: Pos) =
     val s = str.substring(1, str.length - 1).trim
     if s == "" then fail(pos._1, pos._2, "Empty Tag")
     else s
@@ -87,9 +88,10 @@ object RecursiveParser:
             val arr = skipBoth(k)(pos).split(raw"\s+")
             if arr.length != 2 then
               fail(pos._1, pos._2, "invalid delimiter tag")
-            val o = arr(0)
-            val c = arr(1)
-            parser(create)(a, _tokens, (state._1, state._2, create(o)(c)), _pos)
+            val o  = arr(0)
+            val c  = arr(1)
+            val ct = ChangeDelimitersToken(o, c, state._1, state._2)
+            parser(create)(a, ct :: _tokens, (o, c, create(o)(c)), _pos)
           else fail(pos._1, pos._2, "invalid delimiter tag")
         case '/' =>
           val key = skipLeft(k)(pos)

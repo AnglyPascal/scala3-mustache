@@ -7,7 +7,7 @@ trait Token extends TypeAliases:
   def templateSource: String
 
 trait CompositeToken:
-  this: Token => 
+  this: Token =>
 
   protected def composite(
       tokens: List[Token],
@@ -25,7 +25,7 @@ trait CompositeToken:
     val result = tasks.map((t, c) => t.render(c, partials, callstack))
     val len    = result.foldLeft(0)(_ + _.maxLength)
 
-    new TokenProduct{
+    new TokenProduct:
       val maxLength: Int = len
-      def write(out: StringBuilder) = result.map(_.write(out))
-    }
+      def write(out: StringBuilder) =
+        result.map(_.write(out))

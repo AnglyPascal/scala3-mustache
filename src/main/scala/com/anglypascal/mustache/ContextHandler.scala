@@ -1,18 +1,16 @@
 package com.anglypascal.mustache
 
+import com.anglypascal.mustache.tokens.Token
+
+import java.lang.reflect.Field
+import java.lang.reflect.Method
 import scala.annotation.tailrec
-import scala.concurrent.{Awaitable, Await}
+import scala.concurrent.Await
+import scala.concurrent.Awaitable
 import scala.concurrent.duration.Duration
-import java.lang.reflect.{Field, Method}
-import com.anglypascal.mustache.asts.CValue
 
 trait ContextHandler extends TypeAliases:
-  protected def defaultRender(otag: String, ctag: String): Renderer =
-    (context, partials, callstack) =>
-      str => {
-        val t = new Mustache(str, otag, ctag)
-        t.render(context, partials, callstack)
-      }
+  this: Token =>
 
   def valueOf(
       key: String,
@@ -24,18 +22,19 @@ trait ContextHandler extends TypeAliases:
   ): Any =
     val r: Render = render(context, partials, callstack)
 
-    val wrappedEval: () => Any = callstack
-      .filter(_.isInstanceOf[Mustache])
-      .asInstanceOf[List[Mustache]]
-      .foldLeft(() => {
-        eval(findInContext(context :: callstack, key), childrenString, r)
-      })((f, e) => { () => { e.withContextAndRenderFn(context, r)(f()) } })
+    val wrappedEval: () => Any =
+      callstack
+        .filter(_.isInstanceOf[Mustache])
+        .asInstanceOf[List[Mustache]]
+        .foldLeft(() => {
+          eval(findInContext(context :: callstack, key), childrenString, r)
+        })((f, e) => { () => { e.withContextAndRenderFn(context, r)(f()) } })
 
     wrappedEval() match
       case None if (key == ".") => context
       case other                => other
 
-  @tailrec // add a way to extend this to match some other data structure, ie Value AST
+  @tailrec
   private def eval(value: Any, str: String, render: Render): Any =
     import Extensions.*
     import AST.*
@@ -65,11 +64,11 @@ trait ContextHandler extends TypeAliases:
     callstack.headOption match
       case None => None
       case Some(head) =>
-        (head match
+        val v = head match
           case null           => None
           case map: Map[?, ?] => map.findKey(key)
           /** findKey also needs to check for attributes like length or such? */
-          case ctx: AST       => ctx.findKey(key)
+          case ctx: AST => ctx.findKey(key)
           case other =>
             AST.findConverter(other) match
               case Some(conv) =>
@@ -77,18 +76,19 @@ trait ContextHandler extends TypeAliases:
                   case Right(ast) => ast.findKey(key)
                   case Left(any)  => reflection(any, key)
               case None => reflection(other, key)
-        ) match
+
+        v match
           case None  => findInContext(callstack.tail, key)
           case other => other
 
-  private def reflection(x: Any, key: String): Any =
+  private inline def reflection(x: Any, key: String): Any =
     val w = x.asInstanceOf[AnyRef]
     methods(w).get(key) getOrElse (fields(w).get(key) getOrElse None)
 
-  private def methods(w: AnyRef): Map[String, Object] =
-    val excludedGlobals =
-      List("wait", "toString", "hashCode", "getClass", "notify", "notifyAll")
+  private val excludedGlobals =
+    List("wait", "toString", "hashCode", "getClass", "notify", "notifyAll")
 
+  private inline def methods(w: AnyRef): Map[String, Object] =
     def filterMethod(x: Method): Boolean =
       val name   = x.getName
       val params = x.getParameterTypes
@@ -104,17 +104,20 @@ trait ContextHandler extends TypeAliases:
           params(0) == classOf[String] &&
           params(1) == classOf[Function1[String, String]]))
 
-    def mapMethod(x: Method): (String, Object) = {
+    def mapMethod(x: Method): (String, Object) =
       x.getName -> (
         if (x.getParameterTypes.length == 0) then () => { x.invoke(w) }
         else if (x.getParameterTypes.length == 1) then
           (str: String) => { x.invoke(w, str) }
         else (str: String, rnd: String => String) => { x.invoke(w, str, rnd) }
       )
-    }
 
-    Map(w.getClass.getMethods.filter(filterMethod).map(mapMethod).toSeq: _*)
+    w.getClass.getMethods
+      .collect(method =>
+        filterMethod(method) match
+          case true => mapMethod(method)
+      )
+      .toMap
 
-  private def fields(w: AnyRef): Map[String, Field] = Map(
-    w.getClass.getFields.map(x => { x.getName -> x }).toSeq: _*
-  )
+  private inline def fields(w: AnyRef): Map[String, Field] =
+    w.getClass.getFields.map(x => x.getName -> x).toMap

@@ -6,13 +6,14 @@ import org.scalatest.flatspec.AnyFlatSpec
 import scala.concurrent.{Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import com.rallyhealth.weejson.v1.Obj
+import com.anglypascal.mustache.tokens.UnescapedToken
 
 /** Test that Context handler behaves properly when given WeeJson Value objects
   */
 class ContextHandlerWeeJsonValueSpecification
     extends AnyFlatSpec
     with TypeAliases:
-  object CH extends ContextHandler
+  object CH extends UnescapedToken("", "", "") with ContextHandler
 
   val c = CValue
 

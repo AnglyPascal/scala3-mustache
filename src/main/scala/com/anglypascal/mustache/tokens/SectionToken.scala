@@ -1,5 +1,7 @@
 package com.anglypascal.mustache.tokens
-import com.anglypascal.mustache._
+
+import com.anglypascal.mustache.ContextHandler
+import com.anglypascal.mustache.Mustache
 
 class SectionToken(
     inverted: Boolean,

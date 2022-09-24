@@ -2,6 +2,7 @@ package com.anglypascal.mustache.parsers
 
 import com.anglypascal.mustache.*
 import org.scalatest.flatspec.AnyFlatSpec
+import scala.io.Source
 
 class ParserSpecification extends AnyFlatSpec:
 
@@ -121,9 +122,14 @@ class ParserSpecification extends AnyFlatSpec:
     assertThrows[MustacheParseException] { mus5 }
   }
 
+  /** FIXME add column checker
+    */
   it should "report lines properly" in {
     def errorLine(mus: => Mustache) =
       intercept[MustacheParseException] { mus }.row
+
+    def errorCol(mus: => Mustache) =
+      intercept[MustacheParseException] { mus }.col
 
     def mus1 = new Mustache("{{>}}")
     assert(errorLine(mus1) === 1)
@@ -135,4 +141,17 @@ class ParserSpecification extends AnyFlatSpec:
     assert(errorLine(mus4) === 1)
     def mus5 = new Mustache("some text \n\r {{^}} ... {{/}}")
     assert(errorLine(mus5) === 3)
+  }
+
+  /** FIXME: Test if templateSource equals the input string. Also why are we
+    * using Mustache here? Test Parser directly :/
+    */
+
+  it should "templateSource of RootToken should be equal to the source" in {
+    val str =
+      "hello {{world}} {{#this}}{{is}}{{/this}} a test {{&string}} {{=__ __=}}"
+    val src = Source.fromString(str)
+    val rt  = RecursiveParser.parse(src, "{{", "}}")
+    assert(str === rt.templateSource)
+
   }

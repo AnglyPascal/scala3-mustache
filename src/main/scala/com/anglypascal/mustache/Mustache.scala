@@ -1,9 +1,11 @@
 package com.anglypascal.mustache
 
-import com.anglypascal.mustache.tokens.{Token, TokenProduct}
 import com.anglypascal.mustache.parsers.IterativeParser
-import scala.io.Source
 import com.anglypascal.mustache.parsers.RecursiveParser
+import com.anglypascal.mustache.tokens.Token
+import com.anglypascal.mustache.tokens.TokenProduct
+
+import scala.io.Source
 
 class Mustache(root: Token) extends MustacheHelperSupport:
 

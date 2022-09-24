@@ -4,9 +4,11 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.concurrent.{Future}
 import scala.concurrent.ExecutionContext.Implicits.global
+import _root_.com.anglypascal.mustache.tokens.UnescapedToken
 
 class ContextHandlerSpecification extends AnyFlatSpec with TypeAliases:
-  object CH extends ContextHandler
+  object CH extends UnescapedToken("", "", "") with ContextHandler
+  val t0 = System.nanoTime()
 
   val map0  = Map()
   val map1  = Map("a" -> "b")
@@ -136,4 +138,9 @@ class ContextHandlerSpecification extends AnyFlatSpec with TypeAliases:
         r1
       ) === 42
     )
+  }
+
+  it should "report runtime" in {
+    val tn = System.nanoTime()
+    println(tn - t0)
   }
